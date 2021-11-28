@@ -1,74 +1,248 @@
 package cli
 
+import (
+	"fmt"
+
+	"github.com/Contra-Culture/report"
+)
+
 type (
 	App struct {
-		name        string
+		title       string
 		description string
+		version     string
 		commands    map[string]*Command
 	}
 	AppCfgr struct {
-		app *App
+		app    *App
+		report *report.RContext
 	}
 	Command struct {
 		name        string
 		description string
-		cmd         string
-		args        []*Argument
-		params      []*Param
-		Quest       *Quest
+		title       string
+		handler     func(map[string]string) error
+		primary     []*CommandInput
+		flagIndex   map[string]*CommandInput
 	}
 	CommandCfgr struct {
 		command *Command
+		report  *report.RContext
 	}
-	Argument struct {
+	CommandInput struct {
 		name        string
 		description string
-	}
-	Param struct {
-		name        string
-		description string
+		question    string
 		flag        string
+		envVar      string
+		checker     func(string) *report.RContext
+		primary     []*CommandInput
+		flagIndex   map[string]*CommandInput
 	}
-	Quest struct {
-		question           string
-		param              *Param
-		quests             map[string]*Quest
-		answerQuestNameMap func(string) (string, error)
-	}
-	QuestCfgr struct {
-		quest *Quest
+	CommandInputCfgr struct {
+		commandInput *CommandInput
+		report       *report.RContext
 	}
 )
 
+const (
+	DEFAULT_COMMAND_NAME = ""
+	HELP_COMMAND_NAME    = "help"
+)
+
+var reserverCommandNames = []string{
+	DEFAULT_COMMAND_NAME,
+	HELP_COMMAND_NAME,
+}
+
 func New(cfg func(*AppCfgr)) *App {
-	app := &App{}
+	app := &App{
+		commands: map[string]*Command{},
+	}
 	cfg(
 		&AppCfgr{
-			app: app,
+			app:    app,
+			report: report.New("app"),
 		})
 	return app
 }
-func (c *AppCfgr) Name(n string) {
-
+func (c *AppCfgr) Version(v string) {
+	if len(c.app.version) > 0 {
+		c.report.Error("app version already specified")
+		return
+	}
+	c.app.version = v
+}
+func (c *AppCfgr) Title(n string) {
+	if len(c.app.title) > 0 {
+		c.report.Error("app title already specified")
+		return
+	}
+	c.app.title = n
 }
 func (c *AppCfgr) Description(d string) {
-
+	if len(c.app.description) > 0 {
+		c.report.Error("app description already specified")
+		return
+	}
+	c.app.description = d
 }
-func (c *AppCfgr) Command() {
-
+func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
+	if c.app.commands[n] != nil {
+		c.report.Error(fmt.Sprintf("app has already \"%s\" command specified", n))
+		return
+	}
+	var (
+		command = &Command{
+			name:      n,
+			primary:   []*CommandInput{},
+			flagIndex: map[string]*CommandInput{},
+		}
+		commandCfgr = &CommandCfgr{
+			command: command,
+			report:  c.report.Context(fmt.Sprintf("command \"%s\"", n)),
+		}
+	)
+	cfg(commandCfgr)
+	c.app.commands[n] = command
 }
-func (c *AppCfgr) DefaultCommand() {
-
-}
-func (c *CommandCfgr) Name(n string) {
-
+func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
+	if c.app.commands[DEFAULT_COMMAND_NAME] != nil {
+		c.report.Error("app default command already specified")
+		return
+	}
+	var (
+		command = &Command{
+			name:      DEFAULT_COMMAND_NAME,
+			primary:   []*CommandInput{},
+			flagIndex: map[string]*CommandInput{},
+		}
+		commandCfgr = &CommandCfgr{
+			command: command,
+			report:  c.report.Context("default command"),
+		}
+	)
+	cfg(commandCfgr)
+	c.app.commands[DEFAULT_COMMAND_NAME] = command
 }
 func (c *CommandCfgr) Description(d string) {
-
+	if len(c.command.description) > 0 {
+		c.report.Error("command description already specified")
+		return
+	}
+	c.command.description = d
 }
-func (c *CommandCfgr) Cmd(cmd string) {
-
+func (c *CommandCfgr) Title(t string) {
+	if len(c.command.title) > 0 {
+		c.report.Error("command title already specified")
+		return
+	}
+	c.command.title = t
 }
-func (c *CommandCfgr) Map(p func(string) bool, qn string) {
-
+func (c *CommandCfgr) HandleWith(handler func(map[string]string) error) {
+	if c.command.handler != nil {
+		c.report.Error("handler already specified")
+		return
+	}
+	c.command.handler = handler
+}
+func (c *CommandCfgr) Optional(flag string, cfg func(*CommandInputCfgr)) {
+	_, exists := c.command.flagIndex[flag]
+	if exists {
+		c.report.Error(fmt.Sprintf("optional param \"-%s\" already specified", flag))
+		return
+	}
+	input := &CommandInput{
+		flag:      flag,
+		flagIndex: map[string]*CommandInput{},
+	}
+	inputCfgr := &CommandInputCfgr{
+		commandInput: input,
+		report:       c.report.Context(fmt.Sprintf("optional param \"-%s\"", flag)),
+	}
+	cfg(inputCfgr)
+	c.command.flagIndex[flag] = input
+}
+func (c *CommandCfgr) Primary(flag string, cfg func(*CommandInputCfgr)) {
+	_, exists := c.command.flagIndex[flag]
+	if exists {
+		c.report.Error(fmt.Sprintf("optional param \"-%s\" already specified", flag))
+		return
+	}
+	input := &CommandInput{
+		flag:      flag,
+		flagIndex: map[string]*CommandInput{},
+	}
+	inputCfgr := &CommandInputCfgr{
+		commandInput: input,
+		report:       c.report.Context(fmt.Sprintf("optional param \"-%s\"", flag)),
+	}
+	cfg(inputCfgr)
+	c.command.primary = append(c.command.primary, input)
+	c.command.flagIndex[flag] = input
+}
+func (c *CommandInputCfgr) Name(n string) {
+	if len(c.commandInput.name) > 0 {
+		c.report.Error("command input name already specified")
+		return
+	}
+	c.commandInput.name = n
+}
+func (c *CommandInputCfgr) Description(d string) {
+	if len(c.commandInput.description) > 0 {
+		c.report.Error("command input description already specified")
+		return
+	}
+	c.commandInput.description = d
+}
+func (c *CommandInputCfgr) Question(q string) {
+	if len(c.commandInput.question) > 0 {
+		c.report.Error("command input question already specified")
+		return
+	}
+	c.commandInput.question = q
+}
+func (c *CommandInputCfgr) CheckWith(checker func(string) *report.RContext) {
+	if c.commandInput.checker != nil {
+		c.report.Error("checker already specified")
+		return
+	}
+	c.commandInput.checker = checker
+}
+func (c *CommandInputCfgr) Primary(flag string, cfg func(*CommandInputCfgr)) {
+	_, exists := c.commandInput.flagIndex[flag]
+	if exists {
+		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", flag))
+		return
+	}
+	input := &CommandInput{
+		name:      flag,
+		flag:      flag,
+		flagIndex: map[string]*CommandInput{},
+	}
+	inputCfgr := &CommandInputCfgr{
+		commandInput: input,
+		report:       c.report.Context(fmt.Sprintf("primary flag \"%s\"", flag)),
+	}
+	cfg(inputCfgr)
+	c.commandInput.primary = append(c.commandInput.primary, input)
+	c.commandInput.flagIndex[flag] = input
+}
+func (c *CommandInputCfgr) Optional(flag string, cfg func(*CommandInputCfgr)) {
+	_, exists := c.commandInput.flagIndex[flag]
+	if exists {
+		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", flag))
+		return
+	}
+	input := &CommandInput{
+		name:      flag,
+		flag:      flag,
+		flagIndex: map[string]*CommandInput{},
+	}
+	inputCfgr := &CommandInputCfgr{
+		commandInput: input,
+		report:       c.report.Context(fmt.Sprintf("optional flag \"%s\"", flag)),
+	}
+	cfg(inputCfgr)
+	c.commandInput.flagIndex[flag] = input
 }
