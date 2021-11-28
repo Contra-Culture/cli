@@ -146,40 +146,45 @@ func (c *CommandCfgr) HandleWith(handler func(map[string]string) error) {
 	}
 	c.command.handler = handler
 }
-func (c *CommandCfgr) Optional(flag string, cfg func(*CommandInputCfgr)) {
-	_, exists := c.command.flagIndex[flag]
-	if exists {
-		c.report.Error(fmt.Sprintf("optional param \"-%s\" already specified", flag))
-		return
-	}
+func (c *CommandCfgr) Optional(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		flag:      flag,
 		flagIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
-		report:       c.report.Context(fmt.Sprintf("optional param \"-%s\"", flag)),
+		report:       c.report.Context("optional param"),
 	}
 	cfg(inputCfgr)
-	c.command.flagIndex[flag] = input
+	_, exists := c.command.flagIndex[input.name]
+	if exists {
+		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
+		return
+	}
+	c.command.flagIndex[input.name] = input
 }
-func (c *CommandCfgr) Primary(flag string, cfg func(*CommandInputCfgr)) {
-	_, exists := c.command.flagIndex[flag]
-	if exists {
-		c.report.Error(fmt.Sprintf("optional param \"-%s\" already specified", flag))
-		return
-	}
+func (c *CommandCfgr) Primary(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		flag:      flag,
 		flagIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
-		report:       c.report.Context(fmt.Sprintf("optional param \"-%s\"", flag)),
+		report:       c.report.Context("primary param"),
 	}
 	cfg(inputCfgr)
+	_, exists := c.command.flagIndex[input.name]
+	if exists {
+		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
+		return
+	}
 	c.command.primary = append(c.command.primary, input)
-	c.command.flagIndex[flag] = input
+	c.command.flagIndex[input.name] = input
+}
+func (c *CommandInputCfgr) Flag(f string) {
+	if len(c.commandInput.flag) > 0 {
+		c.report.Error("command input flag already specified")
+		return
+	}
+	c.commandInput.flag = f
 }
 func (c *CommandInputCfgr) Name(n string) {
 	if len(c.commandInput.name) > 0 {
@@ -209,40 +214,36 @@ func (c *CommandInputCfgr) CheckWith(checker func(string) *report.RContext) {
 	}
 	c.commandInput.checker = checker
 }
-func (c *CommandInputCfgr) Primary(flag string, cfg func(*CommandInputCfgr)) {
-	_, exists := c.commandInput.flagIndex[flag]
-	if exists {
-		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", flag))
-		return
-	}
+func (c *CommandInputCfgr) Primary(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		name:      flag,
-		flag:      flag,
 		flagIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
-		report:       c.report.Context(fmt.Sprintf("primary flag \"%s\"", flag)),
+		report:       c.report.Context("primary flag"),
 	}
 	cfg(inputCfgr)
+	_, exists := c.commandInput.flagIndex[input.name]
+	if exists {
+		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
+		return
+	}
 	c.commandInput.primary = append(c.commandInput.primary, input)
-	c.commandInput.flagIndex[flag] = input
+	c.commandInput.flagIndex[input.name] = input
 }
-func (c *CommandInputCfgr) Optional(flag string, cfg func(*CommandInputCfgr)) {
-	_, exists := c.commandInput.flagIndex[flag]
-	if exists {
-		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", flag))
-		return
-	}
+func (c *CommandInputCfgr) Optional(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		name:      flag,
-		flag:      flag,
 		flagIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
-		report:       c.report.Context(fmt.Sprintf("optional flag \"%s\"", flag)),
+		report:       c.report.Context("optional flag"),
 	}
 	cfg(inputCfgr)
-	c.commandInput.flagIndex[flag] = input
+	_, exists := c.commandInput.flagIndex[input.name]
+	if exists {
+		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", input.name))
+		return
+	}
+	c.commandInput.flagIndex[input.name] = input
 }
