@@ -44,13 +44,15 @@ type (
 )
 
 const (
-	DEFAULT_COMMAND_NAME = ""
+	DEFAULT_COMMAND_NAME = "[default]"
 	HELP_COMMAND_NAME    = "help"
+	VERSION_COMMAND_NAME = "version"
 )
 
 var reservedCommandNames = []string{
 	DEFAULT_COMMAND_NAME,
 	HELP_COMMAND_NAME,
+	VERSION_COMMAND_NAME,
 }
 
 func New(cfg func(*AppCfgr)) *App {
@@ -86,6 +88,12 @@ func (c *AppCfgr) Description(d string) {
 	c.app.description = d
 }
 func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
+	for _, rn := range reservedCommandNames {
+		if n == rn {
+			c.report.Error(fmt.Sprintf("command name \"%s\" is reserved", n))
+			return
+		}
+	}
 	if c.app.commands[n] != nil {
 		c.report.Error(fmt.Sprintf("app has already \"%s\" command specified", n))
 		return
@@ -211,7 +219,7 @@ func (c *CommandInputCfgr) Primary(cfg func(*CommandInputCfgr)) {
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
-		report:       c.report.Context("primary flag"),
+		report:       c.report.Context("primary param"),
 	}
 	cfg(inputCfgr)
 	_, exists := c.commandInput.nameIndex[input.name]
@@ -228,7 +236,7 @@ func (c *CommandInputCfgr) Optional(cfg func(*CommandInputCfgr)) {
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
-		report:       c.report.Context("optional flag"),
+		report:       c.report.Context("optional param"),
 	}
 	cfg(inputCfgr)
 	_, exists := c.commandInput.nameIndex[input.name]
