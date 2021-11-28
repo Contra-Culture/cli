@@ -20,21 +20,18 @@ func main() {
 						return nil
 					})
 					cmd.Primary(
-						"file-path",
 						func(p *cli.CommandInputCfgr) {
 							p.Name("filePath")
 							p.Description("path to file")
 							p.Question("Enter the file path")
 						})
 					cmd.Primary(
-						"port",
 						func(p *cli.CommandInputCfgr) {
 							p.Name("port")
 							p.Description("port to listen")
 							p.Question("Enter the port number")
 						})
 					cmd.Optional(
-						"verbose",
 						func(p *cli.CommandInputCfgr) {
 							p.Name("verbose")
 							p.Description("verbose mode in which more detailed output is presented")
@@ -50,7 +47,6 @@ func main() {
 						return nil
 					})
 					cmd.Primary(
-						"message",
 						func(p *cli.CommandInputCfgr) {
 							p.Name("message")
 							p.Description("returns your message back")
@@ -65,14 +61,12 @@ func main() {
 						return nil
 					})
 					cmd.Primary(
-						"name",
 						func(p *cli.CommandInputCfgr) {
 							p.Name("name")
 							p.Description("name for welcome")
 							p.Question("Enter your name")
 						})
 					cmd.Optional(
-						"upcase",
 						func(p *cli.CommandInputCfgr) {
 							p.Name("upcase")
 							p.Description("if passed upcaes the text")

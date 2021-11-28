@@ -23,7 +23,7 @@ type (
 		title       string
 		handler     func(map[string]string) error
 		primary     []*CommandInput
-		flagIndex   map[string]*CommandInput
+		nameIndex   map[string]*CommandInput
 	}
 	CommandCfgr struct {
 		command *Command
@@ -33,11 +33,9 @@ type (
 		name        string
 		description string
 		question    string
-		flag        string
-		envVar      string
 		checker     func(string) *report.RContext
 		primary     []*CommandInput
-		flagIndex   map[string]*CommandInput
+		nameIndex   map[string]*CommandInput
 	}
 	CommandInputCfgr struct {
 		commandInput *CommandInput
@@ -50,7 +48,7 @@ const (
 	HELP_COMMAND_NAME    = "help"
 )
 
-var reserverCommandNames = []string{
+var reservedCommandNames = []string{
 	DEFAULT_COMMAND_NAME,
 	HELP_COMMAND_NAME,
 }
@@ -96,7 +94,7 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 		command = &Command{
 			name:      n,
 			primary:   []*CommandInput{},
-			flagIndex: map[string]*CommandInput{},
+			nameIndex: map[string]*CommandInput{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -115,7 +113,7 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 		command = &Command{
 			name:      DEFAULT_COMMAND_NAME,
 			primary:   []*CommandInput{},
-			flagIndex: map[string]*CommandInput{},
+			nameIndex: map[string]*CommandInput{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -148,43 +146,36 @@ func (c *CommandCfgr) HandleWith(handler func(map[string]string) error) {
 }
 func (c *CommandCfgr) Optional(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		flagIndex: map[string]*CommandInput{},
+		nameIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
 		report:       c.report.Context("optional param"),
 	}
 	cfg(inputCfgr)
-	_, exists := c.command.flagIndex[input.name]
+	_, exists := c.command.nameIndex[input.name]
 	if exists {
 		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
 		return
 	}
-	c.command.flagIndex[input.name] = input
+	c.command.nameIndex[input.name] = input
 }
 func (c *CommandCfgr) Primary(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		flagIndex: map[string]*CommandInput{},
+		nameIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
 		report:       c.report.Context("primary param"),
 	}
 	cfg(inputCfgr)
-	_, exists := c.command.flagIndex[input.name]
+	_, exists := c.command.nameIndex[input.name]
 	if exists {
 		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
 		return
 	}
 	c.command.primary = append(c.command.primary, input)
-	c.command.flagIndex[input.name] = input
-}
-func (c *CommandInputCfgr) Flag(f string) {
-	if len(c.commandInput.flag) > 0 {
-		c.report.Error("command input flag already specified")
-		return
-	}
-	c.commandInput.flag = f
+	c.command.nameIndex[input.name] = input
 }
 func (c *CommandInputCfgr) Name(n string) {
 	if len(c.commandInput.name) > 0 {
@@ -216,34 +207,34 @@ func (c *CommandInputCfgr) CheckWith(checker func(string) *report.RContext) {
 }
 func (c *CommandInputCfgr) Primary(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		flagIndex: map[string]*CommandInput{},
+		nameIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
 		report:       c.report.Context("primary flag"),
 	}
 	cfg(inputCfgr)
-	_, exists := c.commandInput.flagIndex[input.name]
+	_, exists := c.commandInput.nameIndex[input.name]
 	if exists {
 		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
 		return
 	}
 	c.commandInput.primary = append(c.commandInput.primary, input)
-	c.commandInput.flagIndex[input.name] = input
+	c.commandInput.nameIndex[input.name] = input
 }
 func (c *CommandInputCfgr) Optional(cfg func(*CommandInputCfgr)) {
 	input := &CommandInput{
-		flagIndex: map[string]*CommandInput{},
+		nameIndex: map[string]*CommandInput{},
 	}
 	inputCfgr := &CommandInputCfgr{
 		commandInput: input,
 		report:       c.report.Context("optional flag"),
 	}
 	cfg(inputCfgr)
-	_, exists := c.commandInput.flagIndex[input.name]
+	_, exists := c.commandInput.nameIndex[input.name]
 	if exists {
 		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", input.name))
 		return
 	}
-	c.commandInput.flagIndex[input.name] = input
+	c.commandInput.nameIndex[input.name] = input
 }
