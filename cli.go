@@ -2,16 +2,21 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/Contra-Culture/report"
 )
 
 type (
 	App struct {
-		title       string
-		description string
-		version     string
-		commands    map[string]*Command
+		title           string
+		description     string
+		version         string
+		errorHandler    func(error)
+		shotdownHandler func()
+		timeoutHandler  func()
+		commands        map[string]*Command
 	}
 	AppCfgr struct {
 		app    *App
@@ -22,20 +27,19 @@ type (
 		description string
 		title       string
 		handler     func(map[string]string) error
-		primary     []*CommandInput
-		nameIndex   map[string]*CommandInput
+		inputs      map[string]*CommandInput
 	}
 	CommandCfgr struct {
 		command *Command
 		report  *report.RContext
 	}
 	CommandInput struct {
-		name        string
-		description string
-		question    string
-		checker     func(string) *report.RContext
-		primary     []*CommandInput
-		nameIndex   map[string]*CommandInput
+		name         string
+		description  string
+		question     string
+		defaultValue string
+		check        func(*report.RContext, string) bool
+		inputs       map[string]*CommandInput
 	}
 	CommandInputCfgr struct {
 		commandInput *CommandInput
@@ -55,16 +59,73 @@ var reservedCommandNames = []string{
 	VERSION_COMMAND_NAME,
 }
 
-func New(cfg func(*AppCfgr)) *App {
-	app := &App{
+func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
+	app = &App{
 		commands: map[string]*Command{},
 	}
+	r = report.New("app")
 	cfg(
 		&AppCfgr{
 			app:    app,
-			report: report.New("app"),
+			report: r,
 		})
-	return app
+	return
+}
+func (a *App) Handle() (r *report.RContext) {
+	r = report.New(a.title)
+	var (
+		cmdName      = os.Args[1]
+		parsedParams = map[string]string{}
+		params       = map[string]string{}
+		cmd          *Command
+	)
+	c := r.Context("command parsing")
+	switch cmdName[0] {
+	case '-':
+		c.Info("default command picked")
+		cmd = a.commands[DEFAULT_COMMAND_NAME]
+	default:
+		c.Infof("%s command picked", cmdName)
+		cmd = a.commands[cmdName]
+	}
+	c = r.Context("params parsing")
+	for _, p := range os.Args[1:] {
+		keyVal := strings.Split(p, "=")
+		switch len(keyVal) {
+		case 2:
+			key := keyVal[0]
+			val := keyVal[1]
+			if key[0] != '-' {
+				c.Errorf("wrong parameter name \"%s\": should start with \"-\"", key)
+				panic("keys must start with \"-\"")
+			}
+			key = key[1 : len(key)-1]
+			if val[0] == '"' && val[len(val)-1] == '"' || val[0] == '\'' && val[len(val)-1] == '\'' {
+				val = val[1 : len(val)-2]
+			}
+			parsedParams[key] = val
+		default:
+			panic("wrong parameters")
+		}
+	}
+	c = r.Context("params parsing")
+	for cn, ci := range cmd.inputs {
+		if !ci.check(c, parsedParams[cn]) {
+			return
+		}
+		params[cn] = parsedParams[cn]
+	}
+	cmd.handler(params)
+	return
+}
+func (a *App) DocString() string {
+	return ""
+}
+func (c *AppCfgr) Timeout() {
+
+}
+func (c *AppCfgr) Shutdown() {
+
 }
 func (c *AppCfgr) Version(v string) {
 	if len(c.app.version) > 0 {
@@ -87,6 +148,13 @@ func (c *AppCfgr) Description(d string) {
 	}
 	c.app.description = d
 }
+func (c *AppCfgr) HandleErrorsWith(h func(error)) {
+	if c.app.errorHandler != nil {
+		c.report.Error("errors handler already specified")
+		return
+	}
+	c.app.errorHandler = h
+}
 func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 	for _, rn := range reservedCommandNames {
 		if n == rn {
@@ -100,9 +168,8 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 	}
 	var (
 		command = &Command{
-			name:      n,
-			primary:   []*CommandInput{},
-			nameIndex: map[string]*CommandInput{},
+			name:   n,
+			inputs: map[string]*CommandInput{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -119,9 +186,8 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 	}
 	var (
 		command = &Command{
-			name:      DEFAULT_COMMAND_NAME,
-			primary:   []*CommandInput{},
-			nameIndex: map[string]*CommandInput{},
+			name:   DEFAULT_COMMAND_NAME,
+			inputs: map[string]*CommandInput{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -152,38 +218,30 @@ func (c *CommandCfgr) HandleWith(handler func(map[string]string) error) {
 	}
 	c.command.handler = handler
 }
-func (c *CommandCfgr) Optional(cfg func(*CommandInputCfgr)) {
-	input := &CommandInput{
-		nameIndex: map[string]*CommandInput{},
-	}
-	inputCfgr := &CommandInputCfgr{
-		commandInput: input,
-		report:       c.report.Context("optional param"),
-	}
+func (c *CommandCfgr) Input(cfg func(*CommandInputCfgr)) {
+	var (
+		input = &CommandInput{
+			inputs: map[string]*CommandInput{},
+		}
+		inputCfgr = &CommandInputCfgr{
+			commandInput: input,
+			report:       c.report.Context("parameter"),
+		}
+	)
 	cfg(inputCfgr)
-	_, exists := c.command.nameIndex[input.name]
+	_, exists := c.command.inputs[input.name]
 	if exists {
 		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
 		return
 	}
-	c.command.nameIndex[input.name] = input
+	c.command.inputs[input.name] = input
 }
-func (c *CommandCfgr) Primary(cfg func(*CommandInputCfgr)) {
-	input := &CommandInput{
-		nameIndex: map[string]*CommandInput{},
-	}
-	inputCfgr := &CommandInputCfgr{
-		commandInput: input,
-		report:       c.report.Context("primary param"),
-	}
-	cfg(inputCfgr)
-	_, exists := c.command.nameIndex[input.name]
-	if exists {
-		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
+func (c *CommandInputCfgr) Default(v string) {
+	if len(c.commandInput.description) > 0 {
+		c.report.Error("default value already specified")
 		return
 	}
-	c.command.primary = append(c.command.primary, input)
-	c.command.nameIndex[input.name] = input
+	c.commandInput.defaultValue = v
 }
 func (c *CommandInputCfgr) Name(n string) {
 	if len(c.commandInput.name) > 0 {
@@ -206,43 +264,28 @@ func (c *CommandInputCfgr) Question(q string) {
 	}
 	c.commandInput.question = q
 }
-func (c *CommandInputCfgr) CheckWith(checker func(string) *report.RContext) {
-	if c.commandInput.checker != nil {
+func (c *CommandInputCfgr) CheckWith(checker func(*report.RContext, string) bool) {
+	if c.commandInput.check != nil {
 		c.report.Error("checker already specified")
 		return
 	}
-	c.commandInput.checker = checker
+	c.commandInput.check = checker
 }
-func (c *CommandInputCfgr) Primary(cfg func(*CommandInputCfgr)) {
-	input := &CommandInput{
-		nameIndex: map[string]*CommandInput{},
-	}
-	inputCfgr := &CommandInputCfgr{
-		commandInput: input,
-		report:       c.report.Context("primary param"),
-	}
+func (c *CommandInputCfgr) Input(cfg func(*CommandInputCfgr)) {
+	var (
+		input = &CommandInput{
+			inputs: map[string]*CommandInput{},
+		}
+		inputCfgr = &CommandInputCfgr{
+			commandInput: input,
+			report:       c.report.Context("parameter"),
+		}
+	)
 	cfg(inputCfgr)
-	_, exists := c.commandInput.nameIndex[input.name]
+	_, exists := c.commandInput.inputs[input.name]
 	if exists {
-		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
+		c.report.Error(fmt.Sprintf("parameter \"-%s\" already specified", input.name))
 		return
 	}
-	c.commandInput.primary = append(c.commandInput.primary, input)
-	c.commandInput.nameIndex[input.name] = input
-}
-func (c *CommandInputCfgr) Optional(cfg func(*CommandInputCfgr)) {
-	input := &CommandInput{
-		nameIndex: map[string]*CommandInput{},
-	}
-	inputCfgr := &CommandInputCfgr{
-		commandInput: input,
-		report:       c.report.Context("optional param"),
-	}
-	cfg(inputCfgr)
-	_, exists := c.commandInput.nameIndex[input.name]
-	if exists {
-		c.report.Error(fmt.Sprintf("flag \"%s\" already specified", input.name))
-		return
-	}
-	c.commandInput.nameIndex[input.name] = input
+	c.commandInput.inputs[input.name] = input
 }

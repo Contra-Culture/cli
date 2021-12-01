@@ -12,6 +12,10 @@ func main() {
 			app.Title("testapp")
 			app.Version("0.0.1 (test)")
 			app.Description("testapp is a test application which is an example of use of github.com/Contra-Culture/cli library.")
+			app.HandleErrorsWith(
+				func(err error) {
+
+				})
 			app.Default(
 				func(cmd *cli.CommandCfgr) {
 					cmd.Description("")
