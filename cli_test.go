@@ -10,10 +10,12 @@ var _ = Describe("cli", func() {
 	Describe("creation", func() {
 		Describe("New()", func() {
 			It("returns new app", func() {
-				app := New(func(*AppCfgr) {
+				app, r := New(func(*AppCfgr) {
 
 				})
 				Expect(app).NotTo(BeNil())
+				Expect(r).NotTo(BeNil())
+				Expect(r.String()).To(Equal("app configuration\n"))
 			})
 		})
 	})

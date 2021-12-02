@@ -27,23 +27,23 @@ type (
 		description string
 		title       string
 		handler     func(map[string]string) error
-		inputs      map[string]*CommandInput
+		params      map[string]*Param
 	}
 	CommandCfgr struct {
 		command *Command
 		report  *report.RContext
 	}
-	CommandInput struct {
+	Param struct {
 		name         string
 		description  string
 		question     string
 		defaultValue string
 		check        func(*report.RContext, string) bool
-		inputs       map[string]*CommandInput
+		params       map[string]*Param
 	}
-	CommandInputCfgr struct {
-		commandInput *CommandInput
-		report       *report.RContext
+	ParamCfgr struct {
+		param  *Param
+		report *report.RContext
 	}
 )
 
@@ -63,7 +63,7 @@ func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 	app = &App{
 		commands: map[string]*Command{},
 	}
-	r = report.New("app")
+	r = report.New("app configuration")
 	cfg(
 		&AppCfgr{
 			app:    app,
@@ -97,7 +97,7 @@ func (a *App) Handle() (r *report.RContext) {
 			val := keyVal[1]
 			if key[0] != '-' {
 				c.Errorf("wrong parameter name \"%s\": should start with \"-\"", key)
-				panic("keys must start with \"-\"")
+				return
 			}
 			key = key[1 : len(key)-1]
 			if val[0] == '"' && val[len(val)-1] == '"' || val[0] == '\'' && val[len(val)-1] == '\'' {
@@ -105,15 +105,30 @@ func (a *App) Handle() (r *report.RContext) {
 			}
 			parsedParams[key] = val
 		default:
-			panic("wrong parameters")
+			c.Errorf("wrong parameter -<key>=<value> pair: \"%s\"", keyVal)
+			return
 		}
 	}
 	c = r.Context("params parsing")
-	for cn, ci := range cmd.inputs {
-		if !ci.check(c, parsedParams[cn]) {
+	for cn, ci := range cmd.params {
+		pp, passed := parsedParams[cn]
+		if !passed {
+			pp = os.Getenv(ci.name)
+		}
+		if !ci.check(c, pp) {
 			return
 		}
-		params[cn] = parsedParams[cn]
+		params[cn] = pp
+		for cn, ci := range ci.params {
+			pp, passed := parsedParams[cn]
+			if !passed {
+				pp = os.Getenv(ci.name)
+			}
+			if !ci.check(c, pp) {
+				return
+			}
+			params[cn] = pp
+		}
 	}
 	cmd.handler(params)
 	return
@@ -169,7 +184,7 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 	var (
 		command = &Command{
 			name:   n,
-			inputs: map[string]*CommandInput{},
+			params: map[string]*Param{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -187,7 +202,7 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 	var (
 		command = &Command{
 			name:   DEFAULT_COMMAND_NAME,
-			inputs: map[string]*CommandInput{},
+			params: map[string]*Param{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -218,74 +233,74 @@ func (c *CommandCfgr) HandleWith(handler func(map[string]string) error) {
 	}
 	c.command.handler = handler
 }
-func (c *CommandCfgr) Input(cfg func(*CommandInputCfgr)) {
+func (c *CommandCfgr) Param(cfg func(*ParamCfgr)) {
 	var (
-		input = &CommandInput{
-			inputs: map[string]*CommandInput{},
+		param = &Param{
+			params: map[string]*Param{},
 		}
-		inputCfgr = &CommandInputCfgr{
-			commandInput: input,
-			report:       c.report.Context("parameter"),
+		paramCfgr = &ParamCfgr{
+			param:  param,
+			report: c.report.Context("parameter"),
 		}
 	)
-	cfg(inputCfgr)
-	_, exists := c.command.inputs[input.name]
+	cfg(paramCfgr)
+	_, exists := c.command.params[param.name]
 	if exists {
-		c.report.Error(fmt.Sprintf("command input \"%s\" already specified", input.name))
+		c.report.Error(fmt.Sprintf("command param \"%s\" already specified", param.name))
 		return
 	}
-	c.command.inputs[input.name] = input
+	c.command.params[param.name] = param
 }
-func (c *CommandInputCfgr) Default(v string) {
-	if len(c.commandInput.description) > 0 {
+func (c *ParamCfgr) Default(v string) {
+	if len(c.param.description) > 0 {
 		c.report.Error("default value already specified")
 		return
 	}
-	c.commandInput.defaultValue = v
+	c.param.defaultValue = v
 }
-func (c *CommandInputCfgr) Name(n string) {
-	if len(c.commandInput.name) > 0 {
-		c.report.Error("command input name already specified")
+func (c *ParamCfgr) Name(n string) {
+	if len(c.param.name) > 0 {
+		c.report.Error("command param name already specified")
 		return
 	}
-	c.commandInput.name = n
+	c.param.name = n
 }
-func (c *CommandInputCfgr) Description(d string) {
-	if len(c.commandInput.description) > 0 {
-		c.report.Error("command input description already specified")
+func (c *ParamCfgr) Description(d string) {
+	if len(c.param.description) > 0 {
+		c.report.Error("command param description already specified")
 		return
 	}
-	c.commandInput.description = d
+	c.param.description = d
 }
-func (c *CommandInputCfgr) Question(q string) {
-	if len(c.commandInput.question) > 0 {
-		c.report.Error("command input question already specified")
+func (c *ParamCfgr) Question(q string) {
+	if len(c.param.question) > 0 {
+		c.report.Error("command param question already specified")
 		return
 	}
-	c.commandInput.question = q
+	c.param.question = q
 }
-func (c *CommandInputCfgr) CheckWith(checker func(*report.RContext, string) bool) {
-	if c.commandInput.check != nil {
+func (c *ParamCfgr) CheckWith(checker func(*report.RContext, string) bool) {
+	if c.param.check != nil {
 		c.report.Error("checker already specified")
 		return
 	}
-	c.commandInput.check = checker
+	c.param.check = checker
 }
-func (c *CommandInputCfgr) Input(cfg func(*CommandInputCfgr)) {
+func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 	var (
-		input = &CommandInput{
-			inputs: map[string]*CommandInput{},
+		param = &Param{
+			params: map[string]*Param{},
 		}
-		inputCfgr = &CommandInputCfgr{
-			commandInput: input,
-			report:       c.report.Context("parameter"),
+		paramCfgr = &ParamCfgr{
+			param:  param,
+			report: c.report.Context("parameter"),
 		}
 	)
-	cfg(inputCfgr)
-	_, exists := c.commandInput.inputs[input.name]
+	cfg(paramCfgr)
+	_, exists := c.param.params[param.name]
 	if exists {
-		c.report.Error(fmt.Sprintf("parameter \"-%s\" already specified", input.name))
+		c.report.Error(fmt.Sprintf("parameter \"-%s\" already specified", param.name))
 		return
 	}
-	c.commandInput.inputs[input.name] = input
+	c.param.params[param.name] = param
 }
