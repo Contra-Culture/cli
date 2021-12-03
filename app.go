@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -17,10 +16,7 @@ type (
 		shotdownHandler func()
 		timeoutHandler  func()
 		commands        map[string]*Command
-	}
-	AppCfgr struct {
-		app    *App
-		report *report.RContext
+		report          *report.RContext
 	}
 )
 
@@ -36,144 +32,62 @@ func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 		})
 	return
 }
-func (a *App) Handle() (r *report.RContext) {
-	r = report.New(a.title)
-	var (
-		cmdName      = os.Args[1]
-		parsedParams = map[string]string{}
-		params       = map[string]string{}
-		cmd          *Command
-	)
-	c := r.Context("command parsing")
-	switch cmdName[0] {
-	case '-':
-		c.Info("default command picked")
-		cmd = a.commands[DEFAULT_COMMAND_NAME]
+func (a *App) command() (c *Command, ps map[string]string, ok bool) {
+	a.report.Infof("checking command...")
+	args := []string{}
+	switch len(os.Args) {
+	case 1:
+		a.report.Info("default command picked")
+		c = a.commands[DEFAULT_COMMAND_NAME]
 	default:
-		c.Infof("%s command picked", cmdName)
-		cmd = a.commands[cmdName]
+		cmdName := os.Args[1]
+		switch cmdName[0] {
+		case '-':
+			a.report.Info("default command picked")
+			c = a.commands[DEFAULT_COMMAND_NAME]
+			args = os.Args[1:]
+		default:
+			a.report.Infof("%s command picked", cmdName)
+			c = a.commands[cmdName]
+			args = os.Args[2:]
+		}
 	}
-	c = r.Context("params parsing")
-	for _, p := range os.Args[1:] {
-		keyVal := strings.Split(p, "=")
+	for _, arg := range args {
+		keyVal := strings.Split(arg, "=")
 		switch len(keyVal) {
 		case 2:
 			key := keyVal[0]
+			switch key[0] {
+			case '-':
+				key = key[1:]
+			default:
+				a.report.Errorf("wrong parameter key \"%s\"", key)
+				c = nil
+				ps = nil
+				return
+			}
 			val := keyVal[1]
-			if key[0] != '-' {
-				c.Errorf("wrong parameter name \"%s\": should start with \"-\"", key)
-				return
-			}
-			key = key[1 : len(key)-1]
-			if val[0] == '"' && val[len(val)-1] == '"' || val[0] == '\'' && val[len(val)-1] == '\'' {
-				val = val[1 : len(val)-2]
-			}
-			parsedParams[key] = val
+			ps[key] = val
 		default:
-			c.Errorf("wrong parameter -<key>=<value> pair: \"%s\"", keyVal)
+			a.report.Errorf("wrong -<key>=<value> string: \"%s\"", arg)
+			c = nil
+			ps = nil
 			return
 		}
 	}
-	c = r.Context("params parsing")
-	for cn, ci := range cmd.params {
-		pp, passed := parsedParams[cn]
-		if !passed {
-			pp = os.Getenv(ci.name)
-		}
-		if !ci.check(c, pp) {
-			return
-		}
-		params[cn] = pp
-		for cn, ci := range ci.params {
-			pp, passed := parsedParams[cn]
-			if !passed {
-				pp = os.Getenv(ci.name)
-			}
-			if !ci.check(c, pp) {
-				return
-			}
-			params[cn] = pp
-		}
+	ok = true
+	return
+}
+func (a *App) Handle() (r *report.RContext) {
+	r = a.report
+	cmd, givenParams, ok := a.command()
+	if !ok {
+		r.Info("exit because of error")
+		return
 	}
-	cmd.handler(params)
+	cmd.execute(r.Contextf("command %s execution", cmd.title), givenParams)
 	return
 }
 func (a *App) DocString() string {
 	return ""
-}
-func (c *AppCfgr) Timeout() {
-
-}
-func (c *AppCfgr) Shutdown() {
-
-}
-func (c *AppCfgr) Version(v string) {
-	if len(c.app.version) > 0 {
-		c.report.Error("app version already specified")
-		return
-	}
-	c.app.version = v
-}
-func (c *AppCfgr) Title(n string) {
-	if len(c.app.title) > 0 {
-		c.report.Error("app title already specified")
-		return
-	}
-	c.app.title = n
-}
-func (c *AppCfgr) Description(d string) {
-	if len(c.app.description) > 0 {
-		c.report.Error("app description already specified")
-		return
-	}
-	c.app.description = d
-}
-func (c *AppCfgr) HandleErrorsWith(h func(error)) {
-	if c.app.errorHandler != nil {
-		c.report.Error("errors handler already specified")
-		return
-	}
-	c.app.errorHandler = h
-}
-func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
-	for _, rn := range reservedCommandNames {
-		if n == rn {
-			c.report.Error(fmt.Sprintf("command name \"%s\" is reserved", n))
-			return
-		}
-	}
-	if c.app.commands[n] != nil {
-		c.report.Error(fmt.Sprintf("app has already \"%s\" command specified", n))
-		return
-	}
-	var (
-		command = &Command{
-			name:   n,
-			params: map[string]*Param{},
-		}
-		commandCfgr = &CommandCfgr{
-			command: command,
-			report:  c.report.Context(fmt.Sprintf("command \"%s\"", n)),
-		}
-	)
-	cfg(commandCfgr)
-	c.app.commands[n] = command
-}
-func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
-	if c.app.commands[DEFAULT_COMMAND_NAME] != nil {
-		c.report.Error("app default command already specified")
-		return
-	}
-	var (
-		command = &Command{
-			name:   DEFAULT_COMMAND_NAME,
-			params: map[string]*Param{},
-		}
-		commandCfgr = &CommandCfgr{
-			command: command,
-			report:  c.report.Context("default command"),
-		}
-	)
-	cfg(commandCfgr)
-	c.app.commands[DEFAULT_COMMAND_NAME] = command
 }
