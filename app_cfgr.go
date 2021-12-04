@@ -13,12 +13,6 @@ type (
 	}
 )
 
-func (c *AppCfgr) Timeout() {
-
-}
-func (c *AppCfgr) Shutdown() {
-
-}
 func (c *AppCfgr) Version(v string) {
 	if len(c.app.version) > 0 {
 		c.report.Error("app version already specified")

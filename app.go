@@ -9,14 +9,12 @@ import (
 
 type (
 	App struct {
-		title           string
-		description     string
-		version         string
-		errorHandler    func(error)
-		shotdownHandler func()
-		timeoutHandler  func()
-		commands        map[string]*Command
-		report          *report.RContext
+		title        string
+		description  string
+		version      string
+		errorHandler func(error)
+		commands     map[string]*Command
+		report       *report.RContext
 	}
 )
 
@@ -35,6 +33,7 @@ func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 func (a *App) command() (c *Command, ps map[string]string, ok bool) {
 	a.report.Infof("checking command...")
 	args := []string{}
+	ps = map[string]string{}
 	switch len(os.Args) {
 	case 1:
 		a.report.Info("default command picked")
@@ -75,17 +74,24 @@ func (a *App) command() (c *Command, ps map[string]string, ok bool) {
 			return
 		}
 	}
-	ok = true
+	ps, ok = c.prepareParams(a.report, ps)
 	return
 }
 func (a *App) Handle() (r *report.RContext) {
 	r = a.report
-	cmd, givenParams, ok := a.command()
+	cmd, params, ok := a.command()
 	if !ok {
 		r.Info("exit because of error")
 		return
 	}
-	cmd.execute(r.Contextf("command %s execution", cmd.title), givenParams)
+	ok = cmd.execute(
+		r.Contextf("command %s execution", cmd.title),
+		params,
+		a.errorHandler,
+	)
+	if !ok {
+		panic(r.String())
+	}
 	return
 }
 func (a *App) DocString() string {
