@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/Contra-Culture/report"
 )
 
@@ -27,19 +25,19 @@ var reservedCommandNames = []string{
 	CONSOLE_COMMAND_NAME,
 }
 
-func (c *CommandCfgr) Description(d string) {
-	if len(c.command.description) > 0 {
-		c.report.Error("command description already specified")
-		return
-	}
-	c.command.description = d
-}
 func (c *CommandCfgr) Title(t string) {
 	if len(c.command.title) > 0 {
 		c.report.Error("command title already specified")
 		return
 	}
 	c.command.title = t
+}
+func (c *CommandCfgr) Description(d string) {
+	if len(c.command.description) > 0 {
+		c.report.Error("command description already specified")
+		return
+	}
+	c.command.description = d
 }
 func (c *CommandCfgr) HandleWith(handler func(map[string]string) error) {
 	if c.command.handler != nil {
@@ -61,8 +59,31 @@ func (c *CommandCfgr) Param(cfg func(*ParamCfgr)) {
 	cfg(paramCfgr)
 	_, exists := c.command.params[param.name]
 	if exists {
-		c.report.Error(fmt.Sprintf("command param \"%s\" already specified", param.name))
+		c.report.Errorf("command param \"%s\" already specified", param.name)
 		return
 	}
 	c.command.params[param.name] = param
+}
+func (c *CommandCfgr) check() (ok bool) {
+	errCount := 0
+	ok = len(c.command.title) > 0
+	if !ok {
+		c.report.Error("command title is not specified")
+		errCount++
+	}
+	ok = len(c.command.description) > 0
+	if !ok {
+		c.report.Error("command description is not specified")
+		errCount++
+	}
+	ok = len(c.command.name) > 0
+	if !ok {
+		c.report.Error("command name is not specified")
+		errCount++
+	}
+	if c.command.handler == nil {
+		c.report.Error("command handler is not specified")
+		errCount++
+	}
+	return errCount == 0
 }

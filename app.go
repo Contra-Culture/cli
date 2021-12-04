@@ -23,11 +23,12 @@ func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 		commands: map[string]*Command{},
 	}
 	r = report.New("app configuration")
-	cfg(
-		&AppCfgr{
-			app:    app,
-			report: r,
-		})
+	appCfgr := &AppCfgr{
+		app:    app,
+		report: r,
+	}
+	cfg(appCfgr)
+	appCfgr.check()
 	return
 }
 func (a *App) command() (c *Command, ps map[string]string, ok bool) {

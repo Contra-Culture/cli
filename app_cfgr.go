@@ -44,12 +44,12 @@ func (c *AppCfgr) HandleErrorsWith(h func(error)) {
 func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 	for _, rn := range reservedCommandNames {
 		if n == rn {
-			c.report.Error(fmt.Sprintf("command name \"%s\" is reserved", n))
+			c.report.Errorf("command name \"%s\" is reserved", n)
 			return
 		}
 	}
 	if c.app.commands[n] != nil {
-		c.report.Error(fmt.Sprintf("app has already \"%s\" command specified", n))
+		c.report.Errorf("app has already \"%s\" command specified", n)
 		return
 	}
 	var (
@@ -63,7 +63,9 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 		}
 	)
 	cfg(commandCfgr)
-	c.app.commands[n] = command
+	if commandCfgr.check() {
+		c.app.commands[n] = command
+	}
 }
 func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 	if c.app.commands[DEFAULT_COMMAND_NAME] != nil {
@@ -81,9 +83,10 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 		}
 	)
 	cfg(commandCfgr)
-	c.app.commands[DEFAULT_COMMAND_NAME] = command
+	if commandCfgr.check() {
+		c.app.commands[DEFAULT_COMMAND_NAME] = command
+	}
 }
-
 func (c *AppCfgr) check() (ok bool) {
 	errCount := 0
 	ok = len(c.app.title) > 0
