@@ -17,12 +17,14 @@ const (
 	DEFAULT_COMMAND_NAME = "[default]"
 	HELP_COMMAND_NAME    = "help"
 	VERSION_COMMAND_NAME = "version"
+	CONSOLE_COMMAND_NAME = "console"
 )
 
 var reservedCommandNames = []string{
 	DEFAULT_COMMAND_NAME,
 	HELP_COMMAND_NAME,
 	VERSION_COMMAND_NAME,
+	CONSOLE_COMMAND_NAME,
 }
 
 func (c *CommandCfgr) Description(d string) {

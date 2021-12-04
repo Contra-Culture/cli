@@ -83,3 +83,26 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 	cfg(commandCfgr)
 	c.app.commands[DEFAULT_COMMAND_NAME] = command
 }
+
+func (c *AppCfgr) check() (ok bool) {
+	errCount := 0
+	ok = len(c.app.title) > 0
+	if !ok {
+		c.report.Error("")
+		errCount++
+	}
+	ok = len(c.app.description) > 0
+	if !ok {
+		c.report.Error("")
+		errCount++
+	}
+	_, ok = c.app.commands[DEFAULT_COMMAND_NAME]
+	if !ok {
+		c.report.Error("")
+		errCount++
+	}
+	c.app.commands[HELP_COMMAND_NAME] = &Command{}
+	c.app.commands[VERSION_COMMAND_NAME] = &Command{}
+	c.app.commands[CONSOLE_COMMAND_NAME] = &Command{}
+	return errCount == 0
+}

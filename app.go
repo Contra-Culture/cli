@@ -95,5 +95,20 @@ func (a *App) Handle() (r *report.RContext) {
 	return
 }
 func (a *App) DocString() string {
-	return ""
+	var sb strings.Builder
+	sb.WriteString(a.title)
+	sb.WriteRune('(')
+	sb.WriteString(a.version)
+	sb.WriteRune(')')
+	sb.WriteString(a.description)
+	for _, c := range a.commands {
+		sb.WriteString(c.title)
+		sb.WriteString(c.description)
+		for _, p := range c.params {
+			sb.WriteString(p.name)
+			sb.WriteString(p.description)
+			sb.WriteString(p.question)
+		}
+	}
+	return sb.String()
 }
