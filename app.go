@@ -21,6 +21,7 @@ type (
 func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 	app = &App{
 		commands: map[string]*Command{},
+		report:   report.New("app initialization"),
 	}
 	r = report.New("app configuration")
 	appCfgr := &AppCfgr{

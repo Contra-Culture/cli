@@ -19,8 +19,8 @@ func (c *ParamCfgr) Name(n string) {
 	c.param.name = n
 }
 func (c *ParamCfgr) Default(v string) {
-	if len(c.param.description) > 0 {
-		c.report.Error("default value already specified")
+	if len(c.param.defaultValue) > 0 {
+		c.report.Errorf("default value already specified: %#v", c.param.defaultValue)
 		return
 	}
 	c.param.defaultValue = v
