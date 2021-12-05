@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Contra-Culture/report"
@@ -104,8 +105,31 @@ func (c *AppCfgr) check() (ok bool) {
 		c.report.Error("no app default command specified")
 		errCount++
 	}
-	c.app.commands[HELP_COMMAND_NAME] = &Command{}
-	c.app.commands[VERSION_COMMAND_NAME] = &Command{}
-	c.app.commands[CONSOLE_COMMAND_NAME] = &Command{}
+	c.app.commands[HELP_COMMAND_NAME] = &Command{
+		name:        "help",
+		description: "help shows help information.",
+		title:       "help info",
+		handler: func(_ map[string]string) error {
+			fmt.Print(c.app.DocString())
+			return nil
+		},
+	}
+	c.app.commands[VERSION_COMMAND_NAME] = &Command{
+		name:        "version",
+		description: "version shows the application version, build information and credits.",
+		title:       "version and build info",
+		handler: func(_ map[string]string) error {
+			fmt.Println(c.app.version)
+			return nil
+		},
+	}
+	c.app.commands[CONSOLE_COMMAND_NAME] = &Command{
+		name:        "console",
+		description: "console runs an interactive mode [not implemented yet]",
+		title:       "console",
+		handler: func(_ map[string]string) error {
+			return errors.New("interactive mode is not implemented yet")
+		},
+	}
 	return errCount == 0
 }
