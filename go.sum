@@ -1,5 +1,7 @@
 github.com/Contra-Culture/report v0.0.0-20211201202410-bd421f0e6edc h1:YRJo+dTYD+ultfjolKh+aTZUgDdxTDZ8HCiilgEpWAk=
 github.com/Contra-Culture/report v0.0.0-20211201202410-bd421f0e6edc/go.mod h1:g2NT4oypKFydeu+1KleOCeRVAmj1ExRRiZxjCIBCYl0=
+github.com/Contra-Culture/report v0.0.0-20211205083643-19c710b129d4 h1:VI9FVdH10LbhlF8GGbc1BWiyfN5pHfB9eZElLt2DeJw=
+github.com/Contra-Culture/report v0.0.0-20211205083643-19c710b129d4/go.mod h1:g2NT4oypKFydeu+1KleOCeRVAmj1ExRRiZxjCIBCYl0=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=

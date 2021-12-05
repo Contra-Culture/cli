@@ -91,17 +91,17 @@ func (c *AppCfgr) check() (ok bool) {
 	errCount := 0
 	ok = len(c.app.title) > 0
 	if !ok {
-		c.report.Error("")
+		c.report.Error("no app title specified")
 		errCount++
 	}
 	ok = len(c.app.description) > 0
 	if !ok {
-		c.report.Error("")
+		c.report.Error("no app description specified")
 		errCount++
 	}
 	_, ok = c.app.commands[DEFAULT_COMMAND_NAME]
 	if !ok {
-		c.report.Error("")
+		c.report.Error("no app default command specified")
 		errCount++
 	}
 	c.app.commands[HELP_COMMAND_NAME] = &Command{}
