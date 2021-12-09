@@ -109,7 +109,6 @@ func (a *App) DocString() string {
 		for _, p := range c.params {
 			sb.WriteString(p.name)
 			sb.WriteString(p.description)
-			sb.WriteString(p.question)
 		}
 	}
 	return sb.String()

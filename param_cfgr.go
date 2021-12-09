@@ -32,13 +32,6 @@ func (c *ParamCfgr) Description(d string) {
 	}
 	c.param.description = d
 }
-func (c *ParamCfgr) Question(q string) {
-	if len(c.param.question) > 0 {
-		c.report.Error("command param question already specified")
-		return
-	}
-	c.param.question = q
-}
 func (c *ParamCfgr) CheckWith(checker func(*report.RContext, string) bool) {
 	if c.param.check != nil {
 		c.report.Error("checker already specified")
@@ -77,11 +70,6 @@ func (c *ParamCfgr) check() (ok bool) {
 	ok = len(c.param.description) > 0
 	if !ok {
 		c.report.Error("param description is not specified")
-		errCount++
-	}
-	ok = len(c.param.question) > 0
-	if !ok {
-		c.report.Error("param question is not specified")
 		errCount++
 	}
 	ok = c.param.check != nil

@@ -10,7 +10,6 @@ type (
 	Param struct {
 		name         string
 		description  string
-		question     string
 		defaultValue string
 		check        func(*report.RContext, string) bool
 		params       map[string]*Param

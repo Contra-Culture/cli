@@ -28,7 +28,6 @@ func main() {
 						func(p *cli.ParamCfgr) {
 							p.Name("filePath")
 							p.Description("path to file")
-							p.Question("Enter the file path")
 							p.CheckWith(
 								func(r *report.RContext, v string) bool {
 									return true
@@ -38,7 +37,6 @@ func main() {
 						func(p *cli.ParamCfgr) {
 							p.Name("port")
 							p.Description("port to listen")
-							p.Question("Enter the port number")
 							p.CheckWith(
 								func(r *report.RContext, v string) bool {
 									return true
@@ -48,7 +46,6 @@ func main() {
 						func(p *cli.ParamCfgr) {
 							p.Name("verbose")
 							p.Description("verbose mode in which more detailed output is presented")
-							p.Question("Do you want the verbose mode? y/n")
 							p.Default("y")
 							p.CheckWith(
 								func(r *report.RContext, v string) bool {
@@ -87,7 +84,6 @@ func main() {
 						func(p *cli.ParamCfgr) {
 							p.Name("name")
 							p.Description("name for welcome")
-							p.Question("Enter your name")
 							p.CheckWith(
 								func(r *report.RContext, v string) bool {
 									return true
@@ -96,7 +92,6 @@ func main() {
 								func(p *cli.ParamCfgr) {
 									p.Name("lastname")
 									p.Description("lastname for welcome")
-									p.Question("Enter your lastname")
 									p.CheckWith(
 										func(r *report.RContext, v string) bool {
 											return true
@@ -107,7 +102,6 @@ func main() {
 						func(p *cli.ParamCfgr) {
 							p.Name("upcase")
 							p.Description("if passed upcaes the text")
-							p.Question("Upcase name? y/n")
 							p.Default("y")
 							p.CheckWith(
 								func(r *report.RContext, v string) bool {
