@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/Contra-Culture/report"
@@ -49,14 +48,16 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 			return
 		}
 	}
-	if c.app.commands[n] != nil {
-		c.report.Errorf("app has already \"%s\" command specified", n)
-		return
+	for _, cmd := range c.app.commands {
+		if cmd.name == n {
+			c.report.Errorf("app has already \"%s\" command specified", n)
+			return
+		}
 	}
 	var (
 		command = &Command{
 			name:   n,
-			params: map[string]*Param{},
+			params: []*Param{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -65,18 +66,18 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 	)
 	cfg(commandCfgr)
 	if commandCfgr.check() {
-		c.app.commands[n] = command
+		c.app.commands = append(c.app.commands, command)
 	}
 }
 func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
-	if c.app.commands[DEFAULT_COMMAND_NAME] != nil {
+	if c.app.defaultCommand != nil {
 		c.report.Error("app default command already specified")
 		return
 	}
 	var (
 		command = &Command{
 			name:   DEFAULT_COMMAND_NAME,
-			params: map[string]*Param{},
+			params: []*Param{},
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
@@ -85,7 +86,7 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 	)
 	cfg(commandCfgr)
 	if commandCfgr.check() {
-		c.app.commands[DEFAULT_COMMAND_NAME] = command
+		c.app.defaultCommand = command
 	}
 }
 func (c *AppCfgr) check() (ok bool) {
@@ -100,36 +101,27 @@ func (c *AppCfgr) check() (ok bool) {
 		c.report.Error("no app description specified")
 		errCount++
 	}
-	_, ok = c.app.commands[DEFAULT_COMMAND_NAME]
-	if !ok {
-		c.report.Error("no app default command specified")
-		errCount++
-	}
-	c.app.commands[HELP_COMMAND_NAME] = &Command{
-		name:        "help",
-		description: "help shows help information.",
-		title:       "help info",
-		handler: func(_ map[string]string) error {
-			fmt.Print(c.app.DocString())
-			return nil
-		},
-	}
-	c.app.commands[VERSION_COMMAND_NAME] = &Command{
-		name:        "version",
-		description: "version shows the application version, build information and credits.",
-		title:       "version and build info",
-		handler: func(_ map[string]string) error {
-			fmt.Println(c.app.version)
-			return nil
-		},
-	}
-	c.app.commands[CONSOLE_COMMAND_NAME] = &Command{
-		name:        "console",
-		description: "console runs an interactive mode [not implemented yet]",
-		title:       "console",
-		handler: func(_ map[string]string) error {
-			return errors.New("interactive mode is not implemented yet")
-		},
-	}
+	c.app.commands = append(
+		c.app.commands,
+		&Command{
+			name:        "help",
+			description: "help shows help information.",
+			title:       "help info",
+			handler: func(_ map[string]string) error {
+				fmt.Print(c.app.DocString())
+				return nil
+			},
+		})
+	c.app.commands = append(
+		c.app.commands,
+		&Command{
+			name:        "version",
+			description: "version shows the application version, build information and credits.",
+			title:       "version and build info",
+			handler: func(_ map[string]string) error {
+				fmt.Println(c.app.version)
+				return nil
+			},
+		})
 	return errCount == 0
 }

@@ -57,12 +57,13 @@ func (c *CommandCfgr) Param(cfg func(*ParamCfgr)) {
 		}
 	)
 	cfg(paramCfgr)
-	_, exists := c.command.params[param.name]
-	if exists {
-		c.report.Errorf("command param \"%s\" already specified", param.name)
-		return
+	for _, p := range c.command.params {
+		if p.name == param.name {
+			c.report.Errorf("command param \"%s\" already specified", param.name)
+			return
+		}
 	}
-	c.command.params[param.name] = param
+	c.command.params = append(c.command.params, param)
 }
 func (c *CommandCfgr) check() (ok bool) {
 	errCount := 0

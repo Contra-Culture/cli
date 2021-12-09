@@ -8,20 +8,21 @@ import (
 )
 
 func main() {
-	app, r := cli.New(
+	app, _ := cli.New(
 		func(app *cli.AppCfgr) {
 			app.Title("testapp")
 			app.Version("0.0.1 (test)")
 			app.Description("testapp is a test application which is an example of use of github.com/Contra-Culture/cli library.")
 			app.HandleErrorsWith(
 				func(err error) {
-
+					fmt.Printf("error: %s", err.Error())
 				})
 			app.Default(
 				func(cmd *cli.CommandCfgr) {
 					cmd.Description("print its params")
 					cmd.Title("no-title")
-					cmd.HandleWith(func(map[string]string) error {
+					cmd.HandleWith(func(params map[string]string) error {
+						fmt.Printf("params: %#v\n", params)
 						return nil
 					})
 					cmd.Param(
@@ -58,8 +59,9 @@ func main() {
 				func(cmd *cli.CommandCfgr) {
 					cmd.Description("prints your text")
 					cmd.Title("echo")
-					cmd.HandleWith(func(map[string]string) error {
-						return nil
+					cmd.HandleWith(func(params map[string]string) (err error) {
+						fmt.Printf("\n> %s\n", params["message"])
+						return
 					})
 					cmd.Param(
 						func(p *cli.ParamCfgr) {
@@ -110,10 +112,7 @@ func main() {
 						})
 				})
 		})
-	if app != nil {
-		fmt.Println("ok")
-	}
-	fmt.Print(r.String())
-	r = app.Handle()
-	fmt.Print(r.String())
+	// fmt.Print(r.String())
+	app.Handle()
+	// fmt.Print(r.String())
 }

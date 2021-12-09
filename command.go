@@ -10,7 +10,7 @@ type (
 		description string
 		title       string
 		handler     func(map[string]string) error
-		params      map[string]*Param
+		params      []*Param
 	}
 )
 
