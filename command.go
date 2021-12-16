@@ -14,23 +14,22 @@ type (
 	}
 )
 
-func (c *Command) execute(r *report.RContext, params map[string]string, fallback func(error)) (ok bool) {
+func (c *Command) execute(r *report.RContext, ps map[string]string, fallback func(error)) (ok bool) {
+	r.Infof("command \"%s\" called with: \"%#v\"", c.name, ps)
+	params := map[string]string{}
+	for _, p := range c.params {
+		v := ps[p.name]
+		v, ok = p.prepare(r.Contextf("prepare param \"%s\" with given: \"%s\"", p.name, v), v)
+		if !ok {
+			r.Errorf("parameter \"%s\" required", p.name)
+			return
+		}
+		params[p.name] = v
+	}
 	err := c.handler(params)
 	if err != nil {
 		fallback(err)
 		return false
 	}
 	return true
-}
-func (c *Command) prepareParams(r *report.RContext, gps map[string]string) (ps map[string]string, ok bool) {
-	ps = map[string]string{}
-	for _, p := range c.params {
-		v := gps[p.name]
-		v, ok = p.prepare(r.Contextf("prepare param \"%s\" with given: \"%s\"", p.name, v), v)
-		if !ok {
-			return nil, ok
-		}
-		ps[p.name] = v
-	}
-	return ps, true
 }

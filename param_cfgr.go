@@ -16,6 +16,7 @@ func (c *ParamCfgr) Name(n string) {
 		c.report.Error("command param name already specified")
 		return
 	}
+	c.report.Infof("param name \"%s\"", n)
 	c.param.name = n
 }
 func (c *ParamCfgr) Default(v string) {
@@ -23,6 +24,7 @@ func (c *ParamCfgr) Default(v string) {
 		c.report.Errorf("default value already specified: %#v", c.param.defaultValue)
 		return
 	}
+	c.report.Infof("param default value \"%s\"", v)
 	c.param.defaultValue = v
 }
 func (c *ParamCfgr) Description(d string) {
@@ -30,6 +32,7 @@ func (c *ParamCfgr) Description(d string) {
 		c.report.Error("command param description already specified")
 		return
 	}
+	c.report.Infof("param description \"%s\"", d)
 	c.param.description = d
 }
 func (c *ParamCfgr) CheckWith(checker func(*report.RContext, string) bool) {
@@ -37,16 +40,18 @@ func (c *ParamCfgr) CheckWith(checker func(*report.RContext, string) bool) {
 		c.report.Error("checker already specified")
 		return
 	}
+	c.report.Info("param checker specified")
 	c.param.check = checker
 }
 func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 	var (
 		param = &Param{
+			parent: c.param,
 			params: map[string]*Param{},
 		}
 		paramCfgr = &ParamCfgr{
 			param:  param,
-			report: c.report.Context("parameter"),
+			report: c.report.Context("dependent parameter"),
 		}
 	)
 	cfg(paramCfgr)

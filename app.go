@@ -33,74 +33,54 @@ func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 	appCfgr.check()
 	return
 }
-func (a *App) command() (c *Command, ps map[string]string, ok bool) {
-	a.report.Infof("checking command...")
-	var args []string
-	ps = map[string]string{}
-	switch len(os.Args) {
-	case 1:
-		a.report.Info("default command picked")
-		c = a.defaultCommand
-		args = os.Args[1:]
-	default:
-		cmdName := os.Args[1]
-		switch cmdName[0] {
-		case '-':
-			a.report.Info("default command picked")
-			c = a.defaultCommand
-			args = os.Args[1:]
-		default:
-			a.report.Infof("%s command picked", cmdName)
-			for _, _c := range a.commands {
-				if _c.name == cmdName {
-					c = _c
-					args = os.Args[2:]
+func (a *App) Handle() (r *report.RContext) {
+	var (
+		cmd         *Command
+		cmdName     string
+		params      = map[string]string{}
+		paramsPairs = []string{}
+	)
+	r = a.report
+	r.Infof("called with params: \"%#v\"", os.Args)
+	if len(os.Args) == 1 {
+		cmd = a.defaultCommand
+		r.Info("default command picked")
+	} else {
+		cmdName = os.Args[1]
+		if cmdName[0] == '-' {
+			r.Info("default command picked")
+			cmd = a.defaultCommand
+			paramsPairs = os.Args[1:]
+		} else {
+			for _, _cmd := range a.commands {
+				if _cmd.name == cmdName {
+					cmd = _cmd
+					r.Infof("command \"%s\" picked", cmd.title)
+					paramsPairs = os.Args[2:]
 					break
 				}
 			}
-		}
-	}
-	for _, arg := range args {
-		keyVal := strings.Split(arg, "=")
-		switch len(keyVal) {
-		case 2:
-			key := keyVal[0]
-			switch key[0] {
-			case '-':
-				key = key[1:]
-			default:
-				a.report.Errorf("wrong parameter key \"%s\"", key)
-				c = nil
-				ps = nil
+			if cmd == nil {
+				r.Errorf("unknown command \"%s\"", cmdName)
 				return
 			}
-			val := keyVal[1]
-			ps[key] = val
-		default:
-			a.report.Errorf("wrong -<key>=<value> string: \"%s\"", arg)
-			c = nil
-			ps = nil
-			return
+		}
+		for _, _pp := range paramsPairs {
+			pp := strings.Split(_pp, "=")
+			switch len(pp) {
+			case 2:
+				params[pp[0][1:]] = pp[1]
+			default:
+				r.Errorf("wrong parameter format \"%s\"", _pp)
+				return
+			}
 		}
 	}
-	ps, ok = c.prepareParams(a.report, ps)
-	return
-}
-func (a *App) Handle() (r *report.RContext) {
-	r = a.report
-	cmd, params, ok := a.command()
-	if !ok {
-		r.Info("exit because of error")
-		return
-	}
-	ok = cmd.execute(
+	cmd.execute(
 		r.Contextf("command %s execution", cmd.title),
 		params,
 		a.errorHandler,
 	)
-	if !ok {
-		panic(r.String())
-	}
 	return
 }
 func (a *App) DocString() string {
@@ -124,6 +104,11 @@ func (a *App) DocString() string {
 			for _, p := range c.params {
 				sb.WriteString("\n\n\t\t-")
 				sb.WriteString(p.name)
+				if len(p.defaultValue) > 0 {
+					sb.WriteString(" (optional, default: ")
+					sb.WriteString(p.defaultValue)
+					sb.WriteString(")")
+				}
 				sb.WriteString("\n\t\t\t")
 				sb.WriteString(p.description)
 			}

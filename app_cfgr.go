@@ -81,7 +81,7 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
-			report:  c.report.Context("default command"),
+			report:  c.report.Context("default-command"),
 		}
 	)
 	cfg(commandCfgr)

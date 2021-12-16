@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	app, _ := cli.New(
+	app, r := cli.New(
 		func(app *cli.AppCfgr) {
 			app.Title("testapp")
 			app.Version("0.0.1 (test)")
@@ -19,10 +19,10 @@ func main() {
 				})
 			app.Default(
 				func(cmd *cli.CommandCfgr) {
-					cmd.Description("print its params")
+					cmd.Description("prints its params")
 					cmd.Title("no-title")
 					cmd.HandleWith(func(params map[string]string) error {
-						fmt.Printf("params: %#v\n", params)
+						fmt.Printf("\n\nparams: %#v\n", params)
 						return nil
 					})
 					cmd.Param(
@@ -60,7 +60,7 @@ func main() {
 					cmd.Description("prints your text")
 					cmd.Title("echo")
 					cmd.HandleWith(func(params map[string]string) (err error) {
-						fmt.Printf("\n> %s\n", params["message"])
+						fmt.Printf("\necho > %s\n", params["message"])
 						return
 					})
 					cmd.Param(
@@ -72,20 +72,24 @@ func main() {
 									return true
 								})
 						})
-
 				})
 			app.Command(
 				"hello",
 				func(cmd *cli.CommandCfgr) {
 					cmd.Description("prints hello message")
 					cmd.Title("hello")
-					cmd.HandleWith(func(map[string]string) error {
+					cmd.HandleWith(func(params map[string]string) error {
+						if len(params["name.lastname"]) > 0 {
+							fmt.Printf("\nHello %s %s!\n\n", params["name"], params["name.lastname"])
+						} else {
+							fmt.Printf("\nHello %s!\n\n", params["name"])
+						}
 						return nil
 					})
 					cmd.Param(
 						func(p *cli.ParamCfgr) {
 							p.Name("name")
-							p.Description("name for welcome")
+							p.Description("name for hello")
 							p.CheckWith(
 								func(r *report.RContext, v string) bool {
 									return true
@@ -93,7 +97,8 @@ func main() {
 							p.Param(
 								func(p *cli.ParamCfgr) {
 									p.Name("lastname")
-									p.Description("lastname for welcome")
+									p.Description("lastname for hello")
+									p.Default("")
 									p.CheckWith(
 										func(r *report.RContext, v string) bool {
 											return true
@@ -112,7 +117,7 @@ func main() {
 						})
 				})
 		})
-	// fmt.Print(r.String())
-	app.Handle()
-	// fmt.Print(r.String())
+	fmt.Print(r.String())
+	r = app.Handle()
+	fmt.Print(r.String())
 }
