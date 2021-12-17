@@ -30,7 +30,7 @@ func main() {
 							p.Name("filePath")
 							p.Description("path to file")
 							p.CheckWith(
-								func(r *report.RContext, v string) bool {
+								func(r report.Node, v string) bool {
 									return true
 								})
 						})
@@ -39,7 +39,7 @@ func main() {
 							p.Name("port")
 							p.Description("port to listen")
 							p.CheckWith(
-								func(r *report.RContext, v string) bool {
+								func(r report.Node, v string) bool {
 									return true
 								})
 						})
@@ -49,7 +49,7 @@ func main() {
 							p.Description("verbose mode in which more detailed output is presented")
 							p.Default("y")
 							p.CheckWith(
-								func(r *report.RContext, v string) bool {
+								func(r report.Node, v string) bool {
 									return true
 								})
 						})
@@ -68,7 +68,7 @@ func main() {
 							p.Name("message")
 							p.Description("returns your message back")
 							p.CheckWith(
-								func(r *report.RContext, v string) bool {
+								func(r report.Node, v string) bool {
 									return true
 								})
 						})
@@ -91,7 +91,7 @@ func main() {
 							p.Name("name")
 							p.Description("name for hello")
 							p.CheckWith(
-								func(r *report.RContext, v string) bool {
+								func(r report.Node, v string) bool {
 									return true
 								})
 							p.Param(
@@ -100,7 +100,7 @@ func main() {
 									p.Description("lastname for hello")
 									p.Default("")
 									p.CheckWith(
-										func(r *report.RContext, v string) bool {
+										func(r report.Node, v string) bool {
 											return true
 										})
 								})
@@ -111,13 +111,13 @@ func main() {
 							p.Description("if passed upcaes the text")
 							p.Default("y")
 							p.CheckWith(
-								func(r *report.RContext, v string) bool {
+								func(r report.Node, v string) bool {
 									return true
 								})
 						})
 				})
 		})
-	fmt.Print(r.String())
+	fmt.Print(report.ToString(r))
 	r = app.Handle()
-	fmt.Print(r.String())
+	fmt.Print(report.ToString(r))
 }

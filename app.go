@@ -15,11 +15,11 @@ type (
 		errorHandler   func(error)
 		commands       []*Command
 		defaultCommand *Command
-		report         *report.RContext
+		report         report.Node
 	}
 )
 
-func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
+func New(cfg func(*AppCfgr)) (app *App, r report.Node) {
 	app = &App{
 		commands: []*Command{},
 		report:   report.New("app initialization"),
@@ -33,7 +33,7 @@ func New(cfg func(*AppCfgr)) (app *App, r *report.RContext) {
 	appCfgr.check()
 	return
 }
-func (a *App) Handle() (r *report.RContext) {
+func (a *App) Handle() (r report.Node) {
 	var (
 		cmd         *Command
 		cmdName     string
@@ -41,7 +41,7 @@ func (a *App) Handle() (r *report.RContext) {
 		paramsPairs = []string{}
 	)
 	r = a.report
-	r.Infof("called with params: \"%#v\"", os.Args)
+	r.Info("called with params: \"%#v\"", os.Args)
 	if len(os.Args) == 1 {
 		cmd = a.defaultCommand
 		r.Info("default command picked")
@@ -55,13 +55,13 @@ func (a *App) Handle() (r *report.RContext) {
 			for _, _cmd := range a.commands {
 				if _cmd.name == cmdName {
 					cmd = _cmd
-					r.Infof("command \"%s\" picked", cmd.title)
+					r.Info("command \"%s\" picked", cmd.title)
 					paramsPairs = os.Args[2:]
 					break
 				}
 			}
 			if cmd == nil {
-				r.Errorf("unknown command \"%s\"", cmdName)
+				r.Error("unknown command \"%s\"", cmdName)
 				return
 			}
 		}
@@ -71,13 +71,13 @@ func (a *App) Handle() (r *report.RContext) {
 			case 2:
 				params[pp[0][1:]] = pp[1]
 			default:
-				r.Errorf("wrong parameter format \"%s\"", _pp)
+				r.Error("wrong parameter format \"%s\"", _pp)
 				return
 			}
 		}
 	}
 	cmd.execute(
-		r.Contextf("command %s execution", cmd.title),
+		r.Structure("command %s execution", cmd.title),
 		params,
 		a.errorHandler,
 	)

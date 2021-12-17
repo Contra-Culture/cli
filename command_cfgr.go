@@ -7,7 +7,7 @@ import (
 type (
 	CommandCfgr struct {
 		command *Command
-		report  *report.RContext
+		report  report.Node
 	}
 )
 
@@ -53,13 +53,13 @@ func (c *CommandCfgr) Param(cfg func(*ParamCfgr)) {
 		}
 		paramCfgr = &ParamCfgr{
 			param:  param,
-			report: c.report.Context("parameter"),
+			report: c.report.Structure("parameter"),
 		}
 	)
 	cfg(paramCfgr)
 	for _, p := range c.command.params {
 		if p.name == param.name {
-			c.report.Errorf("command param \"%s\" already specified", param.name)
+			c.report.Error("command param \"%s\" already specified", param.name)
 			return
 		}
 	}

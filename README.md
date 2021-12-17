@@ -4,7 +4,7 @@
 
 - **App** - is the entrypoint and a container for all the CLI commands of the the target you build.
 - **Command** - is a first-class interface to your executable.
-- **CommandInput** - is a parameter to a command
+- **Param** - is a parameter to a command
 - **Handler** - is a function of command inputs that is responsible for command execution.
 
 ## Configuration
@@ -13,7 +13,8 @@
 
 - **\*AppCfgr** - specifies CLI application
 - - **\*CommandCfgr** - specifies a command, its handler and inputs.
-- - - **\*CommandInputCfgr** - specifies command input.
+- - - **\*ParamCfgr** - specifies command input.
+- - - - **\*ParamCfgr** - specifies nested command input.
 
 ###  Example
 

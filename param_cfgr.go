@@ -7,7 +7,7 @@ import (
 type (
 	ParamCfgr struct {
 		param  *Param
-		report *report.RContext
+		report report.Node
 	}
 )
 
@@ -16,15 +16,15 @@ func (c *ParamCfgr) Name(n string) {
 		c.report.Error("command param name already specified")
 		return
 	}
-	c.report.Infof("param name \"%s\"", n)
+	c.report.Info("param name \"%s\"", n)
 	c.param.name = n
 }
 func (c *ParamCfgr) Default(v string) {
 	if len(c.param.defaultValue) > 0 {
-		c.report.Errorf("default value already specified: %#v", c.param.defaultValue)
+		c.report.Error("default value already specified: %#v", c.param.defaultValue)
 		return
 	}
-	c.report.Infof("param default value \"%s\"", v)
+	c.report.Info("param default value \"%s\"", v)
 	c.param.defaultValue = v
 }
 func (c *ParamCfgr) Description(d string) {
@@ -32,10 +32,10 @@ func (c *ParamCfgr) Description(d string) {
 		c.report.Error("command param description already specified")
 		return
 	}
-	c.report.Infof("param description \"%s\"", d)
+	c.report.Info("param description \"%s\"", d)
 	c.param.description = d
 }
-func (c *ParamCfgr) CheckWith(checker func(*report.RContext, string) bool) {
+func (c *ParamCfgr) CheckWith(checker func(report.Node, string) bool) {
 	if c.param.check != nil {
 		c.report.Error("checker already specified")
 		return
@@ -51,7 +51,7 @@ func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 		}
 		paramCfgr = &ParamCfgr{
 			param:  param,
-			report: c.report.Context("dependent parameter"),
+			report: c.report.Structure("dependent parameter"),
 		}
 	)
 	cfg(paramCfgr)
@@ -60,7 +60,7 @@ func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 	}
 	_, exists := c.param.params[param.name]
 	if exists {
-		c.report.Errorf("parameter \"-%s\" already specified", param.name)
+		c.report.Error("parameter \"-%s\" already specified", param.name)
 		return
 	}
 	c.param.params[param.name] = param

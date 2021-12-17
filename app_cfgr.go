@@ -9,7 +9,7 @@ import (
 type (
 	AppCfgr struct {
 		app    *App
-		report *report.RContext
+		report report.Node
 	}
 )
 
@@ -44,13 +44,13 @@ func (c *AppCfgr) HandleErrorsWith(h func(error)) {
 func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 	for _, rn := range reservedCommandNames {
 		if n == rn {
-			c.report.Errorf("command name \"%s\" is reserved", n)
+			c.report.Error("command name \"%s\" is reserved", n)
 			return
 		}
 	}
 	for _, cmd := range c.app.commands {
 		if cmd.name == n {
-			c.report.Errorf("app has already \"%s\" command specified", n)
+			c.report.Error("app has already \"%s\" command specified", n)
 			return
 		}
 	}
@@ -61,7 +61,7 @@ func (c *AppCfgr) Command(n string, cfg func(*CommandCfgr)) {
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
-			report:  c.report.Context(fmt.Sprintf("command \"%s\"", n)),
+			report:  c.report.Structure(fmt.Sprintf("command \"%s\"", n)),
 		}
 	)
 	cfg(commandCfgr)
@@ -81,7 +81,7 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 		}
 		commandCfgr = &CommandCfgr{
 			command: command,
-			report:  c.report.Context("default-command"),
+			report:  c.report.Structure("default-command"),
 		}
 	)
 	cfg(commandCfgr)
