@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"strings"
 
 	"github.com/Contra-Culture/report"
 )
@@ -12,41 +13,50 @@ type (
 		params       map[string]*Param
 		name         string
 		description  string
-		defaultValue string
+		defaultValue *string
 	}
 )
 
-func (p *Param) prepare(r report.Node, given map[string]string, params map[string]string) (ok bool) {
+func (p *Param) prepare(r report.Node, given map[string]string, params map[string]string) bool {
 	var v = given[p.name]
-	switch len(v) {
-	case 0:
+	if len(v) > 0 {
+		r.Info("given param \"%s\": \"%s\"", p.name, v)
+		if !p.check(r.Structure("check param \"%s\"=\"%s\"", p.name, v), v) {
+			return false
+		}
+		params[p.name] = v
+	} else {
 		r.Info("trying to get param \"%s\" from env variable", p.name)
 		v = os.Getenv(p.name)
-		switch len(v) {
-		case 0:
-			r.Info("env variable does not provide \"%s\" parameter value", p.name)
-			r.Info("default value \"%s\" for \"%s\" parameter picked", p.defaultValue, p.name)
-			v = p.defaultValue
-			ok = len(v) > 0
-			if !ok {
-				r.Error("praram \"%s\" required", p.name)
-				return
+		if len(v) > 0 {
+			if !p.check(r.Structure("check param \"%s\"=\"%s\"", p.name, v), v) {
+				return false
 			}
-		default:
-			ok = p.check(r.Structure("check param \"%s\"=\"%s\"", p.name, v), v)
-		}
-	default:
-		ok = p.check(r.Structure("check param \"%s\"=\"%s\"", p.name, v), v)
-		if ok {
 			params[p.name] = v
+		} else {
+			if p.defaultValue == nil {
+				r.Error("param \"%s\" required", p.name)
+				return false
+			}
+			r.Info("env variable does not provide \"%s\" parameter value", p.name)
+			r.Info("default value \"%s\" for \"%s\" parameter picked", *p.defaultValue, p.name)
+			params[p.name] = *p.defaultValue
 		}
 	}
 	for _, child := range p.params {
-		nr := r.Structure("prepare param \"%s\"", p.name)
-		ok = child.prepare(nr, given, params)
-		if !ok {
-			return
+		nr := r.Structure("prepare param \"%s\"", child.name)
+		if !child.prepare(nr, given, params) {
+			return false
 		}
 	}
-	return
+	return true
+}
+func (p *Param) writeDoctringFragment(sb *strings.Builder) {
+	sb.WriteString("\n\n\t\t-")
+	sb.WriteString(p.name)
+	sb.WriteString("\n\t\t\t")
+	sb.WriteString(p.description)
+	for _, p := range p.params {
+		p.writeDoctringFragment(sb)
+	}
 }

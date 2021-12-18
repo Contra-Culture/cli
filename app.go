@@ -77,7 +77,7 @@ func (a *App) Handle() (r report.Node) {
 		}
 	}
 	cmd.execute(
-		r.Structure("command %s execution", cmd.title),
+		r.Structure("command \"%s\" execution", cmd.title),
 		params,
 		a.errorHandler,
 	)
@@ -104,9 +104,9 @@ func (a *App) DocString() string {
 			for _, p := range c.params {
 				sb.WriteString("\n\n\t\t-")
 				sb.WriteString(p.name)
-				if len(p.defaultValue) > 0 {
+				if p.defaultValue != nil {
 					sb.WriteString(" (optional, default: ")
-					sb.WriteString(p.defaultValue)
+					sb.WriteString(*p.defaultValue)
 					sb.WriteString(")")
 				}
 				sb.WriteString("\n\t\t\t")
@@ -124,10 +124,7 @@ func (a *App) DocString() string {
 		if len(c.params) > 0 {
 			sb.WriteString("\n\n\t\t>> parameters <<")
 			for _, p := range c.params {
-				sb.WriteString("\n\n\t\t-")
-				sb.WriteString(p.name)
-				sb.WriteString("\n\t\t\t")
-				sb.WriteString(p.description)
+				p.writeDoctringFragment(&sb)
 			}
 		}
 	}

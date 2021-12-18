@@ -78,13 +78,14 @@ func main() {
 				func(cmd *cli.CommandCfgr) {
 					cmd.Description("prints hello message")
 					cmd.Title("hello")
-					cmd.HandleWith(func(params map[string]string) error {
-						if len(params["name.lastname"]) > 0 {
-							fmt.Printf("\nHello %s %s!\n\n", params["name"], params["name.lastname"])
-						} else {
-							fmt.Printf("\nHello %s!\n\n", params["name"])
+					cmd.HandleWith(func(params map[string]string) (err error) {
+						ln := params["name_lastname"]
+						if len(ln) > 0 {
+							fmt.Printf("\n\t > Hello %s %s!\n\n", params["name"], ln)
+							return
 						}
-						return nil
+						fmt.Printf("\n\t > Hello %s!\n\n", params["name"])
+						return
 					})
 					cmd.Param(
 						func(p *cli.ParamCfgr) {

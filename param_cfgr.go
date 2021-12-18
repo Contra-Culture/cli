@@ -9,26 +9,30 @@ import (
 type (
 	ParamCfgr struct {
 		param  *Param
+		parent *Param
 		report report.Node
-		name   string
 	}
 )
 
 func (c *ParamCfgr) Name(n string) {
-	if len(c.name) > 0 {
+	if len(c.param.name) > 0 {
 		c.report.Error("command param name already specified")
 		return
 	}
 	c.report.Info("param name \"%s\"", n)
-	c.param.name = n
+	if c.parent != nil {
+		c.param.name = fmt.Sprintf("%s_%s", c.parent.name, n)
+	} else {
+		c.param.name = n
+	}
 }
 func (c *ParamCfgr) Default(v string) {
-	if len(c.param.defaultValue) > 0 {
-		c.report.Error("default value already specified: %#v", c.param.defaultValue)
+	if c.param.defaultValue != nil {
+		c.report.Error("default value already specified: %#v", *c.param.defaultValue)
 		return
 	}
 	c.report.Info("param default value \"%s\"", v)
-	c.param.defaultValue = v
+	c.param.defaultValue = &v
 }
 func (c *ParamCfgr) Description(d string) {
 	if len(c.param.description) > 0 {
@@ -53,6 +57,7 @@ func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 		}
 		paramCfgr = &ParamCfgr{
 			param:  param,
+			parent: c.param,
 			report: c.report.Structure("dependent parameter"),
 		}
 	)
@@ -60,31 +65,26 @@ func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 	if !paramCfgr.check() {
 		return
 	}
-	param.name = fmt.Sprintf("%s.%s", c.param.name, c.name)
-	_, exists := c.param.params[c.name]
+	_, exists := c.param.params[param.name]
 	if exists {
 		c.report.Error("parameter \"-%s\" already specified", param.name)
 		return
 	}
 	c.param.params[param.name] = param
 }
-func (c *ParamCfgr) check() (ok bool) {
+func (c *ParamCfgr) check() bool {
 	errCount := 0
-	ok = len(c.param.name) > 0
-	if !ok {
+	if len(c.param.name) == 0 {
 		c.report.Error("param name is not specified")
 		errCount++
 	}
-	ok = len(c.param.description) > 0
-	if !ok {
+	if len(c.param.description) == 0 {
 		c.report.Error("param description is not specified")
 		errCount++
 	}
-	ok = c.param.check != nil
-	if !ok {
+	if c.param.check == nil {
 		c.report.Error("param value checker is not specified")
 		errCount++
 	}
-	ok = errCount == 0
-	return
+	return errCount == 0
 }

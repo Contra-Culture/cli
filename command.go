@@ -21,11 +21,14 @@ func (c *Command) execute(r report.Node, given map[string]string, fallback func(
 		nr := r.Structure("prepare param \"%s\"", p.name)
 		ok = p.prepare(nr, given, params)
 		if !ok {
+			r.Error("param preparation failed")
 			return
 		}
 	}
 	err := c.handler(params)
 	if err != nil {
+		r.Error("command failed: %s", err.Error())
+		r.Info("fallback called")
 		fallback(err)
 		return false
 	}
