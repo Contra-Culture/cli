@@ -20,7 +20,7 @@ func main() {
 			app.Default(
 				func(cmd *cli.CommandCfgr) {
 					cmd.Description("prints its params")
-					cmd.Title("no-title")
+					cmd.Title("parameters")
 					cmd.HandleWith(func(params map[string]string) error {
 						fmt.Printf("\n\nparams: %#v\n", params)
 						return nil

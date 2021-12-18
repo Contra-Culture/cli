@@ -6,8 +6,9 @@ import (
 
 type (
 	CommandCfgr struct {
-		command *Command
-		report  report.Node
+		isDefault bool
+		command   *Command
+		report    report.Node
 	}
 )
 
@@ -29,6 +30,11 @@ func (c *CommandCfgr) Title(t string) {
 	if len(c.command.title) > 0 {
 		c.report.Error("command title already specified")
 		return
+	}
+	if c.isDefault {
+		c.command.name = DEFAULT_COMMAND_NAME
+	} else {
+		c.command.name = t
 	}
 	c.command.title = t
 }
@@ -77,10 +83,12 @@ func (c *CommandCfgr) check() (ok bool) {
 		c.report.Error("command description is not specified")
 		errCount++
 	}
-	ok = len(c.command.name) > 0
-	if !ok {
-		c.report.Error("command name is not specified")
-		errCount++
+	if !c.isDefault {
+		ok = len(c.command.name) > 0
+		if !ok {
+			c.report.Error("command name is not specified")
+			errCount++
+		}
 	}
 	if c.command.handler == nil {
 		c.report.Error("command handler is not specified")

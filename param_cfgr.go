@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/Contra-Culture/report"
 )
 
@@ -8,11 +10,12 @@ type (
 	ParamCfgr struct {
 		param  *Param
 		report report.Node
+		name   string
 	}
 )
 
 func (c *ParamCfgr) Name(n string) {
-	if len(c.param.name) > 0 {
+	if len(c.name) > 0 {
 		c.report.Error("command param name already specified")
 		return
 	}
@@ -46,7 +49,6 @@ func (c *ParamCfgr) CheckWith(checker func(report.Node, string) bool) {
 func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 	var (
 		param = &Param{
-			parent: c.param,
 			params: map[string]*Param{},
 		}
 		paramCfgr = &ParamCfgr{
@@ -58,7 +60,8 @@ func (c *ParamCfgr) Param(cfg func(*ParamCfgr)) {
 	if !paramCfgr.check() {
 		return
 	}
-	_, exists := c.param.params[param.name]
+	param.name = fmt.Sprintf("%s.%s", c.param.name, c.name)
+	_, exists := c.param.params[c.name]
 	if exists {
 		c.report.Error("parameter \"-%s\" already specified", param.name)
 		return

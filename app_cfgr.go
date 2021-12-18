@@ -80,8 +80,9 @@ func (c *AppCfgr) Default(cfg func(*CommandCfgr)) {
 			params: []*Param{},
 		}
 		commandCfgr = &CommandCfgr{
-			command: command,
-			report:  c.report.Structure("default-command"),
+			isDefault: true,
+			command:   command,
+			report:    c.report.Structure("default-command"),
 		}
 	)
 	cfg(commandCfgr)
