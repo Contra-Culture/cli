@@ -3,7 +3,7 @@ module github.com/Contra-Culture/cli
 go 1.17
 
 require (
-	github.com/Contra-Culture/report v0.0.0-20220531110830-d616606cddb8
+	github.com/Contra-Culture/report v0.0.0-20220725205136-cb4302d7de0a
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 )

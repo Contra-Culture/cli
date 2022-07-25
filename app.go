@@ -15,16 +15,16 @@ type (
 		errorHandler   func(error)
 		commands       []*Command
 		defaultCommand *Command
-		report         report.Node
+		reportCreator  func(string, ...interface{}) report.Node
 	}
 )
 
-func New(rn report.Node, cfg func(*AppCfgr)) (app *App, r report.Node) {
+func New(rc func(string, ...interface{}) report.Node, cfg func(*AppCfgr)) (app *App, r report.Node) {
 	app = &App{
-		commands: []*Command{},
-		report:   rn,
+		commands:      []*Command{},
+		reportCreator: rc,
 	}
-	r = report.New("app configuration")
+	r = rc("app configuration")
 	appCfgr := &AppCfgr{
 		app:    app,
 		report: r,
@@ -40,7 +40,7 @@ func (a *App) Handle() (r report.Node) {
 		params      = map[string]string{}
 		paramsPairs = []string{}
 	)
-	r = a.report
+	r = a.reportCreator("command handling")
 	r.Info("called with params: \"%#v\"", os.Args)
 	if len(os.Args) == 1 {
 		cmd = a.defaultCommand

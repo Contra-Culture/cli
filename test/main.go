@@ -13,9 +13,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	rn := report.NewWithTimer(report.DumbTimer(now), "initialization")
+	rc := report.ReportCreator(report.DumbTimer(now))
 	app, r := cli.New(
-		rn,
+		rc,
 		func(app *cli.AppCfgr) {
 			app.Title("testapp")
 			app.Version("0.0.1 (test)")
@@ -125,7 +125,9 @@ func main() {
 						})
 				})
 		})
-	fmt.Print(report.ToString(r))
+	reportStr, _ := report.ToString(r, report.NoTime(), report.NoDuration())
+	fmt.Print(reportStr)
 	r = app.Handle()
-	fmt.Print(report.ToString(r))
+	reportStr, _ = report.ToString(r, report.NoTime(), report.NoDuration())
+	fmt.Print(reportStr)
 }
