@@ -21,8 +21,10 @@ func (p *Param) prepare(r report.Node, given map[string]string, params map[strin
 	var v = given[p.name]
 	if len(v) > 0 {
 		r.Info("given param \"%s\": \"%s\"", p.name, v)
-		if !p.check(r.Structure("check param \"%s\"=\"%s\"", p.name, v), v) {
-			return false
+		if p.check != nil {
+			if !p.check(r.Structure("check param \"%s\"=\"%s\"", p.name, v), v) {
+				return false
+			}
 		}
 		params[p.name] = v
 	} else {
