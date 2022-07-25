@@ -2,13 +2,20 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Contra-Culture/cli"
 	"github.com/Contra-Culture/report"
 )
 
 func main() {
+	now, err := time.Parse(time.RFC3339Nano, "2022-07-02T15:04:05.999999999-07:00")
+	if err != nil {
+		panic(err)
+	}
+	rn := report.NewWithTimer(report.DumbTimer(now), "initialization")
 	app, r := cli.New(
+		rn,
 		func(app *cli.AppCfgr) {
 			app.Title("testapp")
 			app.Version("0.0.1 (test)")
@@ -109,7 +116,7 @@ func main() {
 					cmd.Param(
 						func(p *cli.ParamCfgr) {
 							p.Name("upcase")
-							p.Description("if passed upcaes the text")
+							p.Description("if passed upcase the text")
 							p.Default("y")
 							p.CheckWith(
 								func(r report.Node, v string) bool {

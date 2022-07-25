@@ -19,10 +19,10 @@ type (
 	}
 )
 
-func New(cfg func(*AppCfgr)) (app *App, r report.Node) {
+func New(rn report.Node, cfg func(*AppCfgr)) (app *App, r report.Node) {
 	app = &App{
 		commands: []*Command{},
-		report:   report.New("app initialization"),
+		report:   rn,
 	}
 	r = report.New("app configuration")
 	appCfgr := &AppCfgr{
