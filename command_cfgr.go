@@ -31,11 +31,6 @@ func (c *CommandCfgr) Title(t string) {
 		c.report.Error("command title already specified")
 		return
 	}
-	if c.isDefault {
-		c.command.name = DEFAULT_COMMAND_NAME
-	} else {
-		c.command.name = t
-	}
 	c.command.title = t
 }
 func (c *CommandCfgr) Description(d string) {
